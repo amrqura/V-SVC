@@ -18,7 +18,7 @@ public class dataReader {
 
 	public static dataTable readDataFromCSV(String inputPath,String delimiter,List<Integer> interestedPositions)
 	{
-		dataTable result=new dataTable();
+		dataTable result=new dataTable(interestedPositions.size());
 		
 		List<List<String>> inputDataEntries=CSV.convertCSVStringToList(inputPath, delimiter,interestedPositions);
 
@@ -34,9 +34,11 @@ public class dataReader {
 		for(int i=1;i<inputDataEntries.size();i++)
 		{
 			//read the target value
-			result.getTargets().add(Double.parseDouble(inputDataEntries.get(i).get(0)));
+			//result.getTargets().add(Double.parseDouble(inputDataEntries.get(i).get(0)));
+			result.addTarget(Double.parseDouble(inputDataEntries.get(i).get(0)));
 			// read the data entry from index 1 to the end
-			result.getExamples().add(new dataExample(inputDataEntries.get(i).subList(1, featureSize+1)));
+			//result.getExamples().add(new dataExample(inputDataEntries.get(i).subList(1, featureSize+1)));
+			result.addExample(inputDataEntries.get(i).subList(1, featureSize+1));
 		}
 			
 		return result;
