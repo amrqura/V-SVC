@@ -30,6 +30,8 @@ public class CSV {
 					continue;
 				}
 				List<String> tmpLine=new ArrayList<String>();
+				// read the first coloumn which is the target value
+				tmpLine.add((line.split(delimiter)[0]));
 				for(Integer interestedPosition:interestedPositions)
 					tmpLine.add((line.split(delimiter)[interestedPosition]));
 				result.add( tmpLine);

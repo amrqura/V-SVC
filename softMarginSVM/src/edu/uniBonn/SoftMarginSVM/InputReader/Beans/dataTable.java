@@ -6,6 +6,17 @@ import java.util.List;
 public class dataTable {
 
 	private List<DataAttributes> attributes;
+	public List<Double> getTargets() {
+		if(targets==null)
+			targets=new ArrayList<Double>();
+		
+		return targets;
+	}
+	public void setTargets(List<Double> targets) {
+		this.targets = targets;
+	}
+	private List<Double> targets;
+	
 	public List<DataAttributes> getAttributes() {
 		if(attributes==null)
 		

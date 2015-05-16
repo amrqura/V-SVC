@@ -24,6 +24,7 @@ public class dataReader {
 
 		// set the attributes
 		List<String> attributesNames=inputDataEntries.get(0);
+		int featureSize=interestedPositions.size();
 		for(String tmpAttribute: attributesNames)
 		{
 			result.getAttributes().add(new DataAttributes(tmpAttribute));
@@ -31,8 +32,12 @@ public class dataReader {
 		
 		// fill the databidy
 		for(int i=1;i<inputDataEntries.size();i++)
-			result.getExamples().add(new dataExample(inputDataEntries.get(i)));
-		
+		{
+			//read the target value
+			result.getTargets().add(Double.parseDouble(inputDataEntries.get(i).get(0)));
+			// read the data entry from index 1 to the end
+			result.getExamples().add(new dataExample(inputDataEntries.get(i).subList(1, featureSize+1)));
+		}
 			
 		return result;
 	}
