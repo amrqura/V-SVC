@@ -1,7 +1,9 @@
 package edu.uniBonn.SoftMarginSVM.InputReader.Beans;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class dataTable {
 
@@ -79,11 +81,30 @@ public class dataTable {
 		
 	}
 	
+	public Map<dataExample, Integer> getIDS() {
+		return IDS;
+	}
+	private Map<dataExample, Integer> IDS=new HashMap<dataExample, Integer>();
+	
+		
+	public int getIDForExample(dataExample param)
+	{
+		int result=-1;
+		if(IDS.get(param)>-1)
+			result=IDS.get(param);
+		return result;
+	}
+	
 	public void addExample(List<String> param)
 	{
 		if(examples==null)
 			examples=new ArrayList<dataExample>();
-		examples.add(new dataExample(param));
+		if(IDS==null)
+			IDS=new HashMap<dataExample, Integer>();
+		dataExample newExample=new dataExample(param);	
+		examples.add(newExample);
+		IDS.put(newExample, IDS.size());
+		
 		// maintain the max and the min
 		for(int i=0;i<param.size();i++)
 		{
@@ -95,6 +116,20 @@ public class dataTable {
 			
 		}
 		
+	}
+	/**
+	 * return the data set and target as hashMap
+	 * @return
+	 */
+	public Map<dataExample, Double> getExampleAsMap()
+	{
+		HashMap<dataExample, Double> result=new HashMap<dataExample, Double>();
+		
+		for(int i=0;i<examples.size();i++)
+			result.put(examples.get(i), targets.get(i));
+		
+		
+		return result;
 	}
 	
 	
