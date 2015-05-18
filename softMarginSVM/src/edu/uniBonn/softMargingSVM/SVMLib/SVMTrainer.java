@@ -6,13 +6,13 @@ import java.util.Map;
 
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataExample;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataTable;
-import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.BinaryModel;
+import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.SVMModel;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.supportVector;
 import edu.uniBonn.softMargingSVM.Util.KernelMatrix;
 
 public class SVMTrainer {
 
-	public BinaryModel trainData(dataTable data,svmConfiguration conf)
+	public SVMModel trainData(dataTable data,svmConfiguration conf)
 	{
 		svm_model result=new svm_model();
 		
@@ -34,11 +34,10 @@ public class SVMTrainer {
 		}
 		KernelMatrix matrix=new KernelMatrix(conf.getKernel(),solutionVectors.size(),conf.cache_size);
 		try {
-			BinarySolver s = new BinarySolver(solutionVectors, matrix,weightedCp, weightedCn, conf.eps, true);
-			BinaryModel model = s.solve();
+			quadraticProgrammingProblemSolver s = new quadraticProgrammingProblemSolver(solutionVectors, matrix,weightedCp, weightedCn, conf.eps, true);
+			SVMModel model = s.solve();
 			
 			model.param = conf;
-			//model.setSvmType(conf.svm_type);
 
 			for (Map.Entry<dataExample, Double> entry : model.supportVectors.entrySet())
 				{
@@ -50,8 +49,9 @@ public class SVMTrainer {
 					}
 				}
 
-			model.compact();
+			model.fillParams();
 
+			
 			return model;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

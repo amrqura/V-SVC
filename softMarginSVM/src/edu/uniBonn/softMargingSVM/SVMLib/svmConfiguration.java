@@ -1,10 +1,10 @@
 package edu.uniBonn.softMargingSVM.SVMLib;
 
-import edu.uniBonn.softMargingSVM.SVMLib.Kernel.GaussianRBFKernel;
-import edu.uniBonn.softMargingSVM.SVMLib.Kernel.KernelFunction;
-import edu.uniBonn.softMargingSVM.SVMLib.Kernel.LinearKernel;
-import edu.uniBonn.softMargingSVM.SVMLib.Kernel.PolynomialKernel;
-import edu.uniBonn.softMargingSVM.SVMLib.Kernel.SigmoidKernel;
+import edu.uniBonn.softMargingSVM.SVMLib.Kernel.GaussianRBFKernelFunction;
+import edu.uniBonn.softMargingSVM.SVMLib.Kernel.baseKernelFunction;
+import edu.uniBonn.softMargingSVM.SVMLib.Kernel.LinearKernelFunction;
+import edu.uniBonn.softMargingSVM.SVMLib.Kernel.PolynomialKernelFunction;
+import edu.uniBonn.softMargingSVM.SVMLib.Kernel.SigmoidKernelFunction;
 
 public class svmConfiguration {
 
@@ -24,7 +24,7 @@ public class svmConfiguration {
 	// these are for training only
 	public int cache_size; // in MB
 	public float eps; // stopping criteria
-	public double C; // for C_SVC, EPSILON_SVR and NU_SVR
+	public double C; // regularization parameter
 	public int nr_weight; // for C_SVC
 	public int[] weight_label; // for C_SVC
 	public double[] weight; // for C_SVC
@@ -35,24 +35,25 @@ public class svmConfiguration {
 	
 	
 	
-	public KernelFunction getKernel() {
+	public baseKernelFunction getKernel() {
 		
 		switch(svm_type)
 		{
 		case LINEAR:
-			kernel=new LinearKernel();
+			kernel=new LinearKernelFunction();
 			break;
 		case POLY:
-			kernel=new PolynomialKernel(degree, gamma, coef0);
+			kernel=new PolynomialKernelFunction(degree, gamma, coef0);
 			break;
 		case RBF:
-			kernel=new GaussianRBFKernel(gamma);
+			
+			kernel=new GaussianRBFKernelFunction(gamma);
 			break;
 		case SIGMOID:
-			kernel=new SigmoidKernel(gamma, coef0);
+			kernel=new SigmoidKernelFunction(gamma, coef0);
 			break;
 		default:
-			kernel=new GaussianRBFKernel(gamma);
+			kernel=new GaussianRBFKernelFunction(gamma);
 			break;
 			
 		}
@@ -61,7 +62,7 @@ public class svmConfiguration {
 	}
 
 
-	private KernelFunction kernel;
+	private baseKernelFunction kernel;
 	
 	
 	public Object clone() {

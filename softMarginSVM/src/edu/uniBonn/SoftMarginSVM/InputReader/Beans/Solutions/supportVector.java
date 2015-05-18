@@ -13,7 +13,7 @@ public class supportVector implements Comparable<supportVector>{
 	/**
 	 * Used by the cacheing mechanism to keep track of which SVs are the most active.
 	 */
-	public int rank = -1;
+	public int supportVectorOrder = -1;
 
 	/**
 	 * keep track of the sample id for mapping to ranks
@@ -60,7 +60,7 @@ public class supportVector implements Comparable<supportVector>{
 
 		supportVector that = (supportVector) o;
 
-		if (rank != that.rank)
+		if (supportVectorOrder != that.supportVectorOrder)
 			{
 			return false;
 			}
@@ -89,7 +89,7 @@ public class supportVector implements Comparable<supportVector>{
 
 	public int compareTo(supportVector b)
 		{
-		return rank < b.rank ? -1 : (rank > b.rank ? 1 : 0);
+		return supportVectorOrder < b.supportVectorOrder ? -1 : (supportVectorOrder > b.supportVectorOrder ? 1 : 0);
 		}
 
 // -------------------------- OTHER METHODS --------------------------
@@ -173,10 +173,12 @@ public class supportVector implements Comparable<supportVector>{
 
 	public void updateAlphaStatus(float Cp, float Cn)
 		{
+		// upper pound: alpha<C,y=1 or alpha>0,y=-1
 		if (alpha >= getC(Cp, Cn))
 			{
 			alphaStatus = Status.UPPER_BOUND;
 			}
+		// lower bound : alpha < C , y=-1 or alpha >0 , y=1
 		else if (alpha <= 0)
 			{
 			alphaStatus = Status.LOWER_BOUND;
@@ -189,7 +191,8 @@ public class supportVector implements Comparable<supportVector>{
 
 	public float getC(float Cp, float Cn)
 		{
-		return targetValue==1 ? Cp : Cn;
+			// return C positive or C Negative based on the target Value
+			return targetValue==1 ? Cp : Cn;
 		}
 
 // -------------------------- ENUMERATIONS --------------------------

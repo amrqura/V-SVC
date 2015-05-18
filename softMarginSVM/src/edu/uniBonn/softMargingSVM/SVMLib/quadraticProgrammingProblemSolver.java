@@ -4,33 +4,22 @@ package edu.uniBonn.softMargingSVM.SVMLib;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.AlphaModel;
+import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataExample;
+import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.SVMModel;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.supportVector;
 import edu.uniBonn.softMargingSVM.Util.QMatrix;
 
 
 /**
- * An SMO algorithm in Fan et al., JMLR 6(2005), p. 1889--1918 Solves:
- * <p/>
- * min 0.5(\alpha^T Q \alpha) + p^T \alpha
- * <p/>
- * y^T \alpha = \delta y_i = +1 or -1 0 <= alpha_i <= Cp for y_i = 1 0 <= alpha_i <= Cn for y_i = -1
- * <p/>
- * Given:
- * <p/>
- * Q, p, y, Cp, Cn, and an initial feasible point \alpha l is the size of vectors and matrices eps is the stopping
- * tolerance
- * <p/>
- * solution will be put in \alpha, objective value will be put in obj
- *
+ * An SMO algorithm
  */
 
-public abstract class Solver
+public  class quadraticProgrammingProblemSolver
 	{
-// ------------------------------ FIELDS ------------------------------
 
 
 	private static final int MAXITER = 50000;
@@ -38,7 +27,7 @@ public abstract class Solver
 	protected final static supportVector[] EMPTY_SV_ARRAY = new supportVector[0];
 
 
-	QMatrix Q;
+	QMatrix matrix;
 	float[] Q_svA;
 	float[] Q_svB;
 	float[] Q_all;
@@ -54,33 +43,49 @@ public abstract class Solver
 	protected final int numExamples;
 
 
-// --------------------------- CONSTRUCTORS ---------------------------
 
-/*	protected Solver(QMatrix<P> Q, float Cp, float Cn, float eps, boolean shrinking)
-		{
-		if (eps <= 0)
-			{
-			throw new SvmException("eps <= 0");
-			}
 
-		this.Q = Q;
-		this.Cp = Cp;
-		this.Cn = Cn;
-		this.eps = eps;
-		this.shrinking = shrinking;
-		}*/
+	public SVMModel solve() {
+		optimize();
 
-	public Solver( List<supportVector> solutionVectors,  QMatrix Q, float Cp, float Cn, float eps,
+		SVMModel model = new SVMModel();
+
+		// calculate rho
+		calculate_rho(model);
+
+		// calculate objective value
+
+		float v = 0;
+		for (supportVector svC : allExamples) {
+			v += svC.alpha * (svC.G + svC.linearTerm);
+		}
+
+		model.obj = v / 2;
+
+		model.supportVectors = new HashMap<dataExample, Double>();
+		for (supportVector svC : allExamples) {
+			model.supportVectors.put(svC.point, svC.alpha);
+			
+			
+		}
+		
+		model.upperBoundPositive = Cp;
+		model.upperBoundNegative = Cn;
+
+
+		return model;
+	}
+	
+	public quadraticProgrammingProblemSolver( List<supportVector> solutionVectors,  QMatrix Q, float Cp, float Cn, float eps,
 	              boolean shrinking) throws Exception
 		{
-		//this(Q, Cp, Cn, eps, shrinking);
 
 		if (eps <= 0)
 			{
 			throw new Exception("eps <= 0");
 			}
 
-		this.Q = Q;
+		this.matrix = Q;
 		this.Cp = Cp;
 		this.Cn = Cn;
 		this.eps = eps;
@@ -94,9 +99,8 @@ public abstract class Solver
 		Q_all = new float[numExamples];
 		}
 
-// -------------------------- OTHER METHODS --------------------------
 
-	protected void calculate_rho(AlphaModel si)
+	protected void calculate_rho(SVMModel si)
 		{
 		double r;
 		int nr_free = 0;
@@ -149,7 +153,7 @@ public abstract class Solver
 
 	protected int optimize()
 		{
-		Q.initRanks(allExamples); // write sequential ranks for all the suppor vectors
+		matrix.initOrders(allExamples); // write sequential ranks for all the suppor vectors
 
 		for (supportVector svA : allExamples)			//	for (int i = 0; i < numExamples; i++)
 			{
@@ -178,11 +182,11 @@ public abstract class Solver
 				// //	float alpha_i = shuffledAlpha[i];
 
 				//float[] Q_svA =
-				Q.getQ(svA, active, Q_svA);
+				matrix.fillArrayWithSupportVectorEntries(svA, active, Q_svA);
 				for (supportVector svB : allExamples)
 					{
 					//	assert Q_svA[svB.rank] == Q.evaluate(svA, svB);
-					svB.G += svA.alpha * Q_svA[svB.rank];
+					svB.G += svA.alpha * Q_svA[svB.supportVectorOrder];
 					//Q.evaluate(svA, svB);
 					//	svA.wasEvaluated = true;
 					//	svB.wasEvaluated = true;
@@ -192,7 +196,7 @@ public abstract class Solver
 					for (supportVector svB : allExamples)
 						{
 						//		assert Q_svA[svB.rank] == Q.evaluate(svA, svB);
-						svB.G_bar += svA.getC(Cp, Cn) * Q_svA[svB.rank];
+						svB.G_bar += svA.getC(Cp, Cn) * Q_svA[svB.supportVectorOrder];
 						//Q.evaluate(svA, svB);
 						//	svA.wasEvaluated = true;
 						//	svB.wasEvaluated = true;
@@ -210,7 +214,6 @@ public abstract class Solver
 		supportVector svA;
 		supportVector svB;
 
-		//SolutionVectorPair pair, oldPair;
 
 		while (true)
 			{
@@ -239,11 +242,7 @@ public abstract class Solver
 				resetActiveSet();
 
 
-				// ** logging output disabled for now
-				//logger.debug("*");
-				// 			//svA = pair.svA;
-				// 		//svB = pair.svB;
-
+				// 2- find a two elements working set B={i,j}
 				pair = selectWorkingPair();
 				if (pair.isOptimal) // pair already optimal
 					{
@@ -276,9 +275,9 @@ public abstract class Solver
 
 
 			//float[] Q_svA =
-			Q.getQ(svA, active, Q_svA);
+			matrix.fillArrayWithSupportVectorEntries(svA, active, Q_svA);
 			//float[] Q_svB =
-			Q.getQ(svB, active, Q_svB);
+			matrix.fillArrayWithSupportVectorEntries(svB, active, Q_svB);
 
 			float C_i = svA.getC(Cp, Cn); //getC(i);
 			float C_j = svB.getC(Cp, Cn); //getC(j);
@@ -288,11 +287,11 @@ public abstract class Solver
 
 			if (svA.targetValue != svB.targetValue)
 				{
-				//	assert Q_svA[svB.rank] == Q.evaluate(svA, svB);
-				float quad_coef = Q.evaluateDiagonal(svA) + Q.evaluateDiagonal(svB)
-						+ 2 * Q_svA[svB.rank]; // Q.evaluate(svA, svB);
-				//	svA.wasEvaluated = true;
-				//	svB.wasEvaluated = true;
+				// quad_coef=k(svA,svA)+k(svB,svB)-2k(SvA,svB)
+				//k(SvA,svB)=-1 * k(svA,svB) 
+				float quad_coef = matrix.evaluateDiagonal(svA) + matrix.evaluateDiagonal(svB)
+						+ 2 * Q_svA[svB.supportVectorOrder]; // Q.evaluate(svA, svB);
+
 
 				if (quad_coef <= 0)
 					{
@@ -339,8 +338,8 @@ public abstract class Solver
 			else
 				{
 				//	assert Q_svA[svB.rank] == Q.evaluate(svA, svB);
-				float quad_coef = Q.evaluateDiagonal(svA) + Q.evaluateDiagonal(svB)
-						- 2 * Q_svA[svB.rank]; // Q.evaluate(svA, svB);
+				float quad_coef = matrix.evaluateDiagonal(svA) + matrix.evaluateDiagonal(svB)
+						- 2 * Q_svA[svB.supportVectorOrder]; // Q.evaluate(svA, svB);
 				//	svA.wasEvaluated = true;
 				//	svB.wasEvaluated = true;
 
@@ -437,13 +436,13 @@ public abstract class Solver
 			if (ui != svA.isUpperBound()) //is_upper_bound(i))
 				{
 				//Q_i = Q.getQ(i, numExamples);
-				Q.getQ(svA, active, inactive, Q_all);
+				matrix.getQ(svA, active, inactive, Q_all);
 				if (ui)
 					{
 					for (supportVector svC : allExamples)
 						{
 						//		assert Q_all[svC.rank] == Q.evaluate(svA, svC);
-						svC.G_bar -= C_i * Q_all[svC.rank]; //Q.evaluate(svA, svC);
+						svC.G_bar -= C_i * Q_all[svC.supportVectorOrder]; //Q.evaluate(svA, svC);
 						//		svA.wasEvaluated = true;
 						//		svC.wasEvaluated = true;
 						}
@@ -453,7 +452,7 @@ public abstract class Solver
 					for (supportVector svC : allExamples)
 						{
 						//		assert Q_all[svC.rank] == Q.evaluate(svA, svC);
-						svC.G_bar += C_i * Q_all[svC.rank]; //Q.evaluate(svA, svC);
+						svC.G_bar += C_i * Q_all[svC.supportVectorOrder]; //Q.evaluate(svA, svC);
 						//		svA.wasEvaluated = true;
 						//		svC.wasEvaluated = true;
 						}
@@ -462,13 +461,13 @@ public abstract class Solver
 
 			if (uj != svB.isUpperBound()) //is_upper_bound(j))
 				{				//Q_j = Q.getQ(j, numExamples);
-				Q.getQ(svB, active, inactive, Q_all);
+				matrix.getQ(svB, active, inactive, Q_all);
 				if (uj)
 					{
 					for (supportVector svC : allExamples)
 						{
 						//		assert Q_all[svC.rank] == Q.evaluate(svB, svC);
-						svC.G_bar -= C_j * Q_all[svC.rank]; //Q.evaluate(svB, svC);
+						svC.G_bar -= C_j * Q_all[svC.supportVectorOrder]; //Q.evaluate(svB, svC);
 						//		svB.wasEvaluated = true;
 						//		svC.wasEvaluated = true;
 						}
@@ -478,7 +477,7 @@ public abstract class Solver
 					for (supportVector svC : allExamples)
 						{
 						//		assert Q_all[svC.rank] == Q.evaluate(svB, svC);
-						svC.G_bar += C_j * Q_all[svC.rank]; //Q.evaluate(svB, svC);
+						svC.G_bar += C_j * Q_all[svC.supportVectorOrder]; //Q.evaluate(svB, svC);
 						//		svB.wasEvaluated = true;
 						//		svC.wasEvaluated = true;
 						}
@@ -589,7 +588,7 @@ public abstract class Solver
 		Q_svB = new float[active.length];
 
 		supportVector[] newlyInactive = inactiveList.toArray(EMPTY_SV_ARRAY);
-		Q.maintainCache(active,
+		matrix.maintainCache(active,
 		                newlyInactive);  // note maintainCache doesn't need to know about the currently inactive elements
 
 		inactiveList.addAll(Arrays.asList(inactive));  // but we do need them on the inactive list going forward
@@ -640,13 +639,13 @@ public abstract class Solver
 			for (supportVector svA : inactive)
 				{
 				//float[] Q_i = Q.getQ(i, activeSize);
-				Q.getQ(svA, active, Q_svA);
+				matrix.fillArrayWithSupportVectorEntries(svA, active, Q_svA);
 				for (supportVector svB : active)
 					{
 					if (svB.isFree()) //is_free(j))
 						{
 						//assert Q_svA[svB.rank] == Q.evaluate(svA, svB);
-						svA.G += svB.alpha * Q_svA[svB.rank];
+						svA.G += svB.alpha * Q_svA[svB.supportVectorOrder];
 						//[j];
 						//Q.evaluate(svA, svB);
 						//			svA.wasEvaluated = true;
@@ -663,11 +662,11 @@ public abstract class Solver
 					{
 					//	float[] Q_i = Q.getQ(i, numExamples);
 					//	float alpha_i = shuffledAlpha[i];
-					Q.getQ(svA, active, inactive, Q_all);
+					matrix.getQ(svA, active, inactive, Q_all);
 					for (supportVector svB : inactive)
 						{
 						//assert Q_all[svB.rank] == Q.evaluate(svA, svB);
-						svB.G += svA.alpha * Q_all[svB.rank];
+						svB.G += svA.alpha * Q_all[svB.supportVectorOrder];
 						//Q.evaluate(svA, svB);
 						//		svA.wasEvaluated = true;
 						//		svB.wasEvaluated = true;
@@ -737,7 +736,7 @@ public abstract class Solver
 
 		if (GmaxSV != null)
 			{
-			Q.getQ(GmaxSV, active, Q_svA);
+			matrix.fillArrayWithSupportVectorEntries(GmaxSV, active, Q_svA);
 			}
 
 		for (int i = 0; i < l; i++)
@@ -755,8 +754,8 @@ public abstract class Solver
 					if (grad_diff > 0)
 						{
 						double obj_diff;
-						double quad_coef = Q.evaluateDiagonal(GmaxSV) + Q.evaluateDiagonal(sv)
-								- 2.0f * (GmaxSV.targetValue==1 ? 1f : -1f) * Q_svA[sv.rank]; //Q_GmaxSV[sv.rank];
+						double quad_coef = matrix.evaluateDiagonal(GmaxSV) + matrix.evaluateDiagonal(sv)
+								- 2.0f * (GmaxSV.targetValue==1 ? 1f : -1f) * Q_svA[sv.supportVectorOrder]; //Q_GmaxSV[sv.rank];
 
 						if (quad_coef > 0)
 							{
@@ -787,8 +786,8 @@ public abstract class Solver
 					if (grad_diff > 0)
 						{
 						double obj_diff;
-						double quad_coef = Q.evaluateDiagonal(GmaxSV) + Q.evaluateDiagonal(sv)
-								+ 2.0f * (GmaxSV.targetValue==1 ? 1f : -1f) * Q_svA[sv.rank]; //Q_GmaxSV[sv.rank];
+						double quad_coef = matrix.evaluateDiagonal(GmaxSV) + matrix.evaluateDiagonal(sv)
+								+ 2.0f * (GmaxSV.targetValue==1 ? 1f : -1f) * Q_svA[sv.supportVectorOrder]; //Q_GmaxSV[sv.rank];
 
 
 						if (quad_coef > 0)

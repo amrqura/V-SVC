@@ -1,14 +1,14 @@
 package edu.uniBonn.softMargingSVM.SVMLib.Kernel;
 
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataExample;
-import edu.uniBonn.softMargingSVM.Util.MathSupport;
+import edu.uniBonn.softMargingSVM.Util.MathOperation;
 
-public class PolynomialKernel extends GammaKernel {
+public class PolynomialKernelFunction extends GammaKernelFunctions {
 
 	public int degree;
 	public float coef0;
 	
-	public PolynomialKernel(int degree, float gamma, float coef0) 
+	public PolynomialKernelFunction(int degree, float gamma, float coef0) 
 	{
 	super(gamma);
 	if (degree < 0)
@@ -23,9 +23,9 @@ public class PolynomialKernel extends GammaKernel {
 	
 	
 	@Override
-	public double evaluate(dataExample x, dataExample y) {
+	public double computeKernelFunction(dataExample x, dataExample y) {
 		// TODO Auto-generated method stub
-		return MathSupport.powi(gamma * MathSupport.dot(x, y) + coef0, degree);
+		return MathOperation.powi(gamma * MathOperation.dot(x, y) + coef0, degree);
 	}
 
 }

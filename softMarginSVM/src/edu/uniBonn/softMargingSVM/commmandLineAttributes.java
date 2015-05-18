@@ -7,6 +7,13 @@ import java.util.List;
 public class commmandLineAttributes {
 
 	private String dataFileName;
+	public String getModelFileName() {
+		return modelFileName;
+	}
+
+
+	private String modelFileName;
+	
 	public String getDataFileName() {
 		return dataFileName;
 	}
@@ -41,11 +48,11 @@ public class commmandLineAttributes {
 	private String delimiter;
 	
 
-	public double getPenaltyValue() {
-		return penaltyValue;
+	public double getRegularizationParameter() {
+		return regularizationParameter;
 	}
 
-	private double penaltyValue;
+	private double regularizationParameter;
 	
 
 
@@ -60,16 +67,17 @@ public class commmandLineAttributes {
 	public void readCommandLineAttributes(String[] param) throws Exception
 	{
 		dataFileName=param[0];
-		penaltyValue=Double.parseDouble(param[1]);
-		epsilon=Double.parseDouble(param[2]);
-		delimiter=param[3];
+		modelFileName=param[1];
+		regularizationParameter=Double.parseDouble(param[2]);
+		epsilon=Double.parseDouble(param[3]);
+		delimiter=param[4];
 		
-		for(String interestedIndex:param[4].split(","))
+		for(String interestedIndex:param[5].split(","))
 			interestedFieldPositions.add(Integer.parseInt(interestedIndex));
 		
 		// optional , the cashe size
-		if(param.length>=6)
-			cashSize=Integer.parseInt(param[5]);
+		if(param.length>=7)
+			cashSize=Integer.parseInt(param[6]);
 		else
 			cashSize=100; // defualt size
 		

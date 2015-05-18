@@ -83,5 +83,14 @@ public class dataExample implements Comparable<dataExample>{
 		return 0;
 	}
 	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		String result="";
+		for(Double tmpDouble:exampleData)
+			result+="  "+tmpDouble;
+		return result;
+	}
+	
 	
 }

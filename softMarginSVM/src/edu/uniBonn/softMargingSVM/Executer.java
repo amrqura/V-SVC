@@ -6,7 +6,7 @@ import javax.swing.text.Position.Bias;
 
 import edu.uniBonn.SoftMarginSVM.InputReader.dataReader;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataTable;
-import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.BinaryModel;
+import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.SVMModel;
 import edu.uniBonn.softMargingSVM.SVMLib.SVMTrainer;
 import edu.uniBonn.softMargingSVM.SVMLib.svmConfiguration;
 import edu.uniBonn.softMargingSVM.SVMLib.svm_model;
@@ -43,22 +43,51 @@ public class Executer {
 				System.out.println("3- RBF kernel function");
 				System.out.println("4- sigmoid Kernel function");
 				choise = in.nextInt();
-				if(choise>=1 && choise <=4)
+				if(choise>=1 && choise <=5)
 					break;
 				else
 					System.out.println("wrong choise , please enter the choise again");
 			}
 			svmConfiguration config=new svmConfiguration();
+			
+			if(choise==2)
+			{
+				System.out.println("Please Enter the degree of Polynomial");
+				int polynomail=in.nextInt();
+				config.degree=polynomail;
+				
+			}
+			else if(choise==3)
+			{
+				System.out.println("Please Enter Gamma value");
+				float gamma=in.nextFloat();
+				config.gamma=gamma;
+				
+			}
+			else if(choise==4)
+			{
+				System.out.println("Please Enter the value of Gamma");
+				float gamma=in.nextFloat();
+				config.gamma=gamma;
+				
+				System.out.println("Please Enter the value of coeff");
+				float coef0=in.nextFloat();
+				config.coef0=coef0;
+				
+			}
+			
 			config.svm_type=choise;
+			
 			config.eps=(float)attributeReaders.getEpsilon();
 			config.cache_size=attributeReaders.getCashSize();
 			
 			SVMTrainer trainer=new SVMTrainer();
-			config.C=attributeReaders.getPenaltyValue();
-			
-			BinaryModel model=trainer.trainData(data, config);
-			
-			
+			config.C=attributeReaders.getRegularizationParameter();
+			System.out.println("Learning ......");
+			SVMModel model=trainer.trainData(data, config);
+			System.out.println("finish Learning");
+			System.out.println("Saving training Model in "+attributeReaders.getModelFileName());
+			model.writeModelToFile(attributeReaders.getModelFileName());
 			
 			// start scaling the data
 			

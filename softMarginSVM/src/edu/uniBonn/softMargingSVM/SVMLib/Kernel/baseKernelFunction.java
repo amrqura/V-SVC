@@ -2,8 +2,8 @@ package edu.uniBonn.softMargingSVM.SVMLib.Kernel;
 
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataExample;
 
-public interface KernelFunction {
+public interface baseKernelFunction {
 
-	double evaluate(dataExample x, dataExample y);
+	double computeKernelFunction(dataExample x, dataExample y);
 
 }

@@ -4,22 +4,26 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.supportVector;
-import edu.uniBonn.softMargingSVM.SVMLib.Kernel.KernelFunction;
+import edu.uniBonn.softMargingSVM.SVMLib.Kernel.baseKernelFunction;
 
+
+// normally this matrix should be PSD = Positive Semi Definite
 public class KernelMatrix implements QMatrix{
 
-	private KernelFunction kernel;
+	private baseKernelFunction kernel;
 
-	public KernelMatrix(KernelFunction function, int numExamples, int cacheRows) {
+	public KernelMatrix(baseKernelFunction function, int numExamples, int cacheRows) {
 		// TODO Auto-generated constructor stub
 		this.kernel=function;
 		this.cache = new RecentActivitySquareCache(numExamples, cacheRows);
 		
 	}
 	
-	public float computeQ(supportVector a, supportVector b)
+	public float computeValue(supportVector a, supportVector b)
 	{
-		return (float) (((a.targetValue == b.targetValue) ? 1 : -1) * kernel.evaluate(a.point, b.point));
+		// the kernel matrix should be positive semi definite
+		// the diagoal should equals (y_i * y_j) * K(x_i*x_j) 
+		return (float) (((a.targetValue == b.targetValue) ? 1 : -1) * kernel.computeKernelFunction(a.point, b.point));
 	}
 
 	@Override
@@ -31,7 +35,10 @@ public class KernelMatrix implements QMatrix{
 	private RecentActivitySquareCache cache;
 
 	@Override
-	public void getQ(supportVector svA, supportVector[] active, float[] buf) {
+	/**
+	 * will fill the array buf with the entries from the kernel matrix that corresponds to the svA position
+	 */
+	public void fillArrayWithSupportVectorEntries(supportVector svA, supportVector[] active, float[] buf) {
 		// TODO Auto-generated method stub
 		//System.out.println("getQ");
 		cache.get(svA, active, buf);
@@ -48,12 +55,12 @@ public class KernelMatrix implements QMatrix{
 	}
 
 	@Override
-	public void initRanks(Collection<supportVector> allExamples) {
+	public void initOrders(Collection<supportVector> allExamples) {
 		// TODO Auto-generated method stub
 		int c = 0;
 		for (supportVector a : allExamples)
 			{
-			a.rank = c++;
+			a.supportVectorOrder = c++;
 			}
 		
 	}
@@ -145,17 +152,17 @@ public class KernelMatrix implements QMatrix{
 			// note the use of the redundant sv.rank field here instead of
 			// idToRankMap[sv.id]. This is just for cache locality.
 
-			if (a.rank >= maxCachedRank || b.rank >= maxCachedRank) {
+			if (a.supportVectorOrder >= maxCachedRank || b.supportVectorOrder >= maxCachedRank) {
 				// return NOTCACHED;
 				widemisses++;
-				return computeQ(a, b);
+				return computeValue(a, b);
 			}
 
-			float result = data[a.rank][b.rank];
+			float result = data[a.supportVectorOrder][b.supportVectorOrder];
 			if (result == NOTCACHED) {
-				result = computeQ(a, b);
-				data[a.rank][b.rank] = result;
-				data[b.rank][a.rank] = result;
+				result = computeValue(a, b);
+				data[a.supportVectorOrder][b.supportVectorOrder] = result;
+				data[b.supportVectorOrder][a.supportVectorOrder] = result;
 				misses++;
 			} else {
 				// assert result == computeQ(a, b);
@@ -165,10 +172,10 @@ public class KernelMatrix implements QMatrix{
 		}
 
 		public float getDiagonal(supportVector a) {
-			float result = diagonal[a.rank];
+			float result = diagonal[a.supportVectorOrder];
 			if (result == NOTCACHED) {
-				result = computeQ(a, a);
-				diagonal[a.rank] = result;
+				result = computeValue(a, a);
+				diagonal[a.supportVectorOrder] = result;
 				diagonalmisses++;
 			} else {
 				diagonalhits++;
@@ -188,16 +195,15 @@ public class KernelMatrix implements QMatrix{
 		public void get(supportVector a, supportVector[] active, float[] buf) {
 			// active array is in rank order
 
-			if (a.rank >= maxCachedRank) {
+			if (a.supportVectorOrder >= maxCachedRank) {
 				for (int i = 0; i < active.length; i++) {
-					buf[i] = computeQ(a, active[i]);
+					buf[i] = computeValue(a, active[i]);
 					widemisses++;
 				}
 				return;
 			}
 
-			float[] row = data[a.rank];
-			// assert row[a.rank] == NOTCACHED || (row[a.rank] == getDiagonal(a));
+			float[] row = data[a.supportVectorOrder];
 
 			int cachedAndActive = Math.min(row.length, active.length);
 
@@ -205,9 +211,9 @@ public class KernelMatrix implements QMatrix{
 				if (row[i] == NOTCACHED) {
 					final supportVector b = active[i];
 					// assert b.rank == i;
-					row[i] = computeQ(a, b);
+					row[i] = computeValue(a, b);
 
-					data[b.rank][a.rank] = row[i];
+					data[b.supportVectorOrder][a.supportVectorOrder] = row[i];
 					/*
 					 * if (a == b) { assert (row[a.rank] == getDiagonal(a)); }
 					 */
@@ -219,7 +225,6 @@ public class KernelMatrix implements QMatrix{
 					hits++;
 				}
 			}
-			// assert (row[a.rank] == getDiagonal(a));
 
 			System.arraycopy(row, 0, buf, 0, cachedAndActive); // PERF test whether
 																// this really helps
@@ -227,7 +232,7 @@ public class KernelMatrix implements QMatrix{
 
 			for (int i = cachedAndActive; i < active.length; i++) {
 				final supportVector b = active[i];
-				buf[i] = computeQ(a, b);
+				buf[i] = computeValue(a, b);
 				widemisses++;
 			}
 		}
@@ -252,31 +257,31 @@ public class KernelMatrix implements QMatrix{
 			// then fill the inactive portion one element at a time in the requested
 			// order, not the rank order
 
-			if (a.rank >= maxCachedRank) {
+			if (a.supportVectorOrder >= maxCachedRank) {
 				int i = active.length;
 				for (supportVector b : inactive) {
-					buf[i] = computeQ(a, b);
+					buf[i] = computeValue(a, b);
 					widemisses++;
 					i++;
 				}
 			} else {
-				float[] row = data[a.rank];
+				float[] row = data[a.supportVectorOrder];
 
 				int i = active.length;
 				for (supportVector b : inactive) {
-					if (b.rank >= maxCachedRank) {
-						buf[i] = computeQ(a, b);
+					if (b.supportVectorOrder >= maxCachedRank) {
+						buf[i] = computeValue(a, b);
 						widemisses++;
 					} else {
-						if (row[b.rank] == NOTCACHED) {
-							row[b.rank] = computeQ(a, b);
-							data[b.rank][a.rank] = row[b.rank];
+						if (row[b.supportVectorOrder] == NOTCACHED) {
+							row[b.supportVectorOrder] = computeValue(a, b);
+							data[b.supportVectorOrder][a.supportVectorOrder] = row[b.supportVectorOrder];
 							misses++;
 						} else {
 							// assert result == computeQ(a, b);
 							hits++;
 						}
-						buf[i] = row[b.rank];
+						buf[i] = row[b.supportVectorOrder];
 					}
 					i++;
 				}
@@ -322,7 +327,7 @@ public class KernelMatrix implements QMatrix{
 			while (true) {
 				// find the first active element that was previously ranked too
 				// poorly
-				while (i < active.length && active[i].rank < partitionRank) {
+				while (i < active.length && active[i].supportVectorOrder < partitionRank) {
 					// this one is OK, leave it in place
 					// active[i].rank = i;
 					i++;
@@ -331,7 +336,7 @@ public class KernelMatrix implements QMatrix{
 				// find the first newly inactive element that was previously ranked
 				// too well
 				while (j < newlyInactive.length
-						&& newlyInactive[j].rank >= partitionRank) {
+						&& newlyInactive[j].supportVectorOrder >= partitionRank) {
 					// this one is OK, leave it in place
 					// newlyInactive[j].rank = partitionRank + j;
 					j++;
@@ -363,10 +368,10 @@ public class KernelMatrix implements QMatrix{
 
 		private void swapBySolutionVector(supportVector svA,
 				supportVector svB) {
-			swapByRank(svA.rank, svB.rank);
-			int tmp = svA.rank;
-			svA.rank = svB.rank;
-			svB.rank = tmp;
+			swapByRank(svA.supportVectorOrder, svB.supportVectorOrder);
+			int tmp = svA.supportVectorOrder;
+			svA.supportVectorOrder = svB.supportVectorOrder;
+			svB.supportVectorOrder = tmp;
 
 			/*
 			 * swapById(svA.id, svB.id); svA.rank = idToRankMap[svA.id]; svB.rank =
