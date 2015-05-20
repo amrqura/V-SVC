@@ -25,15 +25,10 @@ public class svmConfiguration {
 	public int cache_size; // in MB
 	public float eps; // stopping criteria
 	public double C; // regularization parameter
-	public int nr_weight; // for C_SVC
-	public int[] weight_label; // for C_SVC
-	public double[] weight; // for C_SVC
-	public double nu; // for NU_SVC, ONE_CLASS, and NU_SVR
-	public double p; // for EPSILON_SVR
-	public int shrinking; // use the shrinking heuristics
-	public int probability; // do probability estimates
+	public float V_Value; // for V-SVC 
 	
-	
+	private baseKernelFunction kernel;
+
 	
 	public baseKernelFunction getKernel() {
 		
@@ -62,7 +57,6 @@ public class svmConfiguration {
 	}
 
 
-	private baseKernelFunction kernel;
 	
 	
 	public Object clone() {

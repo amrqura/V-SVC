@@ -10,6 +10,8 @@ public class dataTable {
 	private List<DataAttributes> attributes;
 	private double[] maxValues;
 	private double[] minValues;
+	
+	
 	public int getNumDim() {
 		return numDim;
 	}
@@ -77,6 +79,8 @@ public class dataTable {
 	{
 		if(targets==null)
 			targets=new ArrayList<Double>();
+		
+		
 		targets.add(value);
 		
 	}

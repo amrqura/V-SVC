@@ -41,6 +41,14 @@ public class commmandLineAttributes {
 	private int cashSize;
 	
 
+	public float getV_Value() {
+		return V_Value;
+	}
+
+
+	private float V_Value;
+	
+	
 	public void setDelimiter(String delimiter) {
 		this.delimiter = delimiter;
 	}
@@ -68,7 +76,8 @@ public class commmandLineAttributes {
 	{
 		dataFileName=param[0];
 		modelFileName=param[1];
-		regularizationParameter=Double.parseDouble(param[2]);
+		
+		V_Value=Float.parseFloat(param[2]);
 		epsilon=Double.parseDouble(param[3]);
 		delimiter=param[4];
 		

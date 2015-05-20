@@ -9,7 +9,6 @@ import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataTable;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.SVMModel;
 import edu.uniBonn.softMargingSVM.SVMLib.SVMTrainer;
 import edu.uniBonn.softMargingSVM.SVMLib.svmConfiguration;
-import edu.uniBonn.softMargingSVM.SVMLib.svm_model;
 import edu.uniBonn.softMargingSVM.Util.SVMScaler;
 
 
@@ -22,7 +21,7 @@ public class Executer {
 		commmandLineAttributes attributeReaders;
 		try
 		{
-			if(args==null || args.length<5)
+			if(args==null || args.length<4)
 				throw new Exception();
 			attributeReaders=new commmandLineAttributes();
 			attributeReaders.readCommandLineAttributes(args);
@@ -80,9 +79,10 @@ public class Executer {
 			
 			config.eps=(float)attributeReaders.getEpsilon();
 			config.cache_size=attributeReaders.getCashSize();
+			config.V_Value=attributeReaders.getV_Value();
 			
 			SVMTrainer trainer=new SVMTrainer();
-			config.C=attributeReaders.getRegularizationParameter();
+			config.C=1.0; // for V-SVC , both C should be 1
 			System.out.println("Learning ......");
 			SVMModel model=trainer.trainData(data, config);
 			System.out.println("finish Learning");

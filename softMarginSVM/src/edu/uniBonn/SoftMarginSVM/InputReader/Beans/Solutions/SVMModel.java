@@ -27,7 +27,7 @@ public class SVMModel {
 	public double[] alphas;
 
 	public float rho;
-
+	public float r;
 	
 
 	protected void writeSupportVectors(DataOutputStream fp) throws IOException {
