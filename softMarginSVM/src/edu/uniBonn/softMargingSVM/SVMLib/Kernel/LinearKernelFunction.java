@@ -8,7 +8,7 @@ public class LinearKernelFunction implements baseKernelFunction {
 	@Override
 	public double computeKernelFunction(dataExample x, dataExample y) {
 		// TODO Auto-generated method stub
-		return MathOperation.dot(x, y);
+		return MathOperation.dotProduct(x, y);
 	}
 	
 

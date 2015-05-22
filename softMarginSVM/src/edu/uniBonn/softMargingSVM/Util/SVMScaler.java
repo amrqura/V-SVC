@@ -8,7 +8,7 @@ import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataTable;
 
 public class SVMScaler {
 
-	
+	// scale the data
 	public dataTable getScaledVersion(dataTable param)
 	{
 		dataTable result=new dataTable(param.getNumDim());

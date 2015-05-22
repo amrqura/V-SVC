@@ -24,7 +24,6 @@ public class SVMTrainer {
 			
 			
 		}
-		// wighted training
 		float weightedCp = (float)conf.C;
 		float weightedCn = (float)conf.C;
 		float linearTerm = 0f;
@@ -61,13 +60,12 @@ public class SVMTrainer {
 					new supportVector(data.getIDForExample(example.getKey()), example.getKey(), example.getValue(),
 					                      linearTerm,initAlpha);
 			
-			//sv.id = problem.getId(example.getKey());
 			solutionVectors.add(sv);
 		}
 		KernelMatrix matrix=new KernelMatrix(conf.getKernel(),solutionVectors.size(),conf.cache_size);
 		try {
 			quadraticProgrammingProblemSolver s = new quadraticProgrammingProblemSolver(solutionVectors, matrix,weightedCp, weightedCn, conf.eps, true);
-			SVMModel model = s.solve();
+			SVMModel model = s.solveEquation();
 			
 			model.param = conf;
 
@@ -95,8 +93,7 @@ public class SVMTrainer {
 
 			model.rho /= r;
 			model.obj /= r * r;
-			model.upperBoundPositive = 1 / r;
-			model.upperBoundNegative = 1 / r;
+			
 
 			
 			model.fillParams();
@@ -104,7 +101,6 @@ public class SVMTrainer {
 			
 			return model;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

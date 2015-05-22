@@ -88,7 +88,7 @@ public class commmandLineAttributes {
 		if(param.length>=7)
 			cashSize=Integer.parseInt(param[6]);
 		else
-			cashSize=100; // defualt size
+			cashSize=5120; // defualt size
 		
 		
 		

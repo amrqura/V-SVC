@@ -5,7 +5,6 @@ import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataExample;
 
 public class MathOperation {
 
-	// -------------------------- STATIC METHODS --------------------------
 
 		public static double powi(double base, int times)
 			{
@@ -25,7 +24,7 @@ public class MathOperation {
 
 	
 
-		public static double dot(dataExample x, dataExample y)
+		public static double dotProduct(dataExample x, dataExample y)
 			{
 
 			final int[] xIndexes = new int[x.getExampleData().size()];
@@ -43,10 +42,8 @@ public class MathOperation {
 			
 			Double[] xValues=new Double[xlen];
 			 xValues =  (x.getExampleData().toArray(xValues));;
-			//xValues=
 			 Double[] yValues=new Double[ylen];
 			 yValues=(y.getExampleData().toArray(yValues));;
-			 //yValues= 
 
 			double sum = 0;
 			int i = 0;

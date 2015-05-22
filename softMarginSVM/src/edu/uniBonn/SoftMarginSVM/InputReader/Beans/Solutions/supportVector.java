@@ -4,15 +4,10 @@ import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataExample;
 
 
 
-// support vector solutions which will be the output from the training Step.
 
 public class supportVector implements Comparable<supportVector>{
 
-	// ------------------------------ FIELDS ------------------------------
 
-	/**
-	 * Used by the cacheing mechanism to keep track of which SVs are the most active.
-	 */
 	public int supportVectorOrder = -1;
 
 	/**
@@ -22,13 +17,12 @@ public class supportVector implements Comparable<supportVector>{
 	final public dataExample point;
 	public double targetValue;
 	public double alpha;
-	public double G;
+	public double Grade;
 	public float linearTerm;
 	Status alphaStatus;
-	public float G_bar;
+	public float Grade_bar;
 
 
-// --------------------------- CONSTRUCTORS ---------------------------
 
 	public supportVector(int id, dataExample key, Double targetValue, float linearTerm)
 		{
@@ -44,7 +38,6 @@ public class supportVector implements Comparable<supportVector>{
 		this.alpha = alpha;
 		}
 
-// ------------------------ CANONICAL METHODS ------------------------
 
 	@Override
 	public boolean equals(Object o)
@@ -79,57 +72,23 @@ public class supportVector implements Comparable<supportVector>{
 	public String toString()
 		{
 		return "SolutionVector{" + "point=" + point + ", targetValue=" + targetValue + ", alpha=" + alpha
-		       + ", alphaStatus=" + alphaStatus + ", G=" + G + ", linearTerm=" + linearTerm + ", G_bar=" + G_bar + '}';
+		       + ", alphaStatus=" + alphaStatus + ", G=" + Grade + ", linearTerm=" + linearTerm + ", G_bar=" + Grade_bar + '}';
 		}
 
-// ------------------------ INTERFACE METHODS ------------------------
 
-
-// --------------------- Interface Comparable ---------------------
 
 	public int compareTo(supportVector b)
 		{
 		return supportVectorOrder < b.supportVectorOrder ? -1 : (supportVectorOrder > b.supportVectorOrder ? 1 : 0);
 		}
 
-// -------------------------- OTHER METHODS --------------------------
 
 	public boolean isFree()
 		{
 		return alphaStatus == Status.FREE;
 		}
 
-	public boolean isShrinkable(double Gmax1, double Gmax2)
-		{
-		//return isShrinkable(Gmax1,Gmax2,Gmax1,Gmax2);
-
-		if (isUpperBound())
-			{
-			if (targetValue==1)
-				{
-				return -G > Gmax1;
-				}
-			else
-				{
-				return -G > Gmax2;
-				}
-			}
-		else if (isLowerBound())
-			{
-			if (targetValue==1)
-				{
-				return G > Gmax2;
-				}
-			else
-				{
-				return G > Gmax1;
-				}
-			}
-		else
-			{
-			return false;
-			}
-		}
+	
 
 	public boolean isUpperBound()
 		{
@@ -147,22 +106,22 @@ public class supportVector implements Comparable<supportVector>{
 			{
 			if (targetValue==1)
 				{
-				return (-G > Gmax1);
+				return (-Grade > Gmax1);
 				}
 			else
 				{
-				return (-G > Gmax4);
+				return (-Grade > Gmax4);
 				}
 			}
 		else if (isLowerBound())
 			{
 			if (targetValue==1)
 				{
-				return (G > Gmax2);
+				return (Grade > Gmax2);
 				}
 			else
 				{
-				return (G > Gmax3);
+				return (Grade > Gmax3);
 				}
 			}
 		else

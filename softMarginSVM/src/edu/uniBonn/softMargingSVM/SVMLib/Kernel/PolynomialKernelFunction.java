@@ -25,7 +25,7 @@ public class PolynomialKernelFunction extends GammaKernelFunctions {
 	@Override
 	public double computeKernelFunction(dataExample x, dataExample y) {
 		// TODO Auto-generated method stub
-		return MathOperation.powi(gamma * MathOperation.dot(x, y) + coef0, degree);
+		return MathOperation.powi(gamma * MathOperation.dotProduct(x, y) + coef0, degree);
 	}
 
 }

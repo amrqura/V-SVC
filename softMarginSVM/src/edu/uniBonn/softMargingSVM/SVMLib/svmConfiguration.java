@@ -21,7 +21,6 @@ public class svmConfiguration {
 	public float gamma; // for poly/rbf/sigmoid
 	public float coef0; // for poly/sigmoid
 
-	// these are for training only
 	public int cache_size; // in MB
 	public float eps; // stopping criteria
 	public double C; // regularization parameter

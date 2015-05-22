@@ -11,7 +11,7 @@ public class SigmoidKernelFunction extends GammaKernelFunctions {
 	@Override
 	public double computeKernelFunction(dataExample x, dataExample y) {
 		// TODO Auto-generated method stub
-		return Math.tanh(gamma * MathOperation.dot(x, y) + coef0);
+		return Math.tanh(gamma * MathOperation.dotProduct(x, y) + coef0);
 	}
 	
 	

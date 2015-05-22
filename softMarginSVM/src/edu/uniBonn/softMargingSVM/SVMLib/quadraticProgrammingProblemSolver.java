@@ -11,7 +11,7 @@ import java.util.List;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.dataExample;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.SVMModel;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.supportVector;
-import edu.uniBonn.softMargingSVM.Util.QMatrix;
+import edu.uniBonn.softMargingSVM.Util.BaseMatrix;
 
 
 /**
@@ -24,29 +24,30 @@ public  class quadraticProgrammingProblemSolver
 
 	private static final int MAXITERATION = 50000;
 
-	protected final static supportVector[] EMPTY_SV_ARRAY = new supportVector[0];
+	private final static supportVector[] EMPTY_SV_ARRAY = new supportVector[0];
 
 
-	QMatrix matrix;
-	float[] Q_svA;
-	float[] Q_svB;
-	float[] Q_all;
+	
 
 	float eps;
 	boolean unshrink = false;
 	boolean shrinking;
 
-	protected final List<supportVector> allExamples;
-	protected supportVector[] active;
-	protected supportVector[] inactive;
-	protected final float Cp, Cn;
-	protected final int numExamples;
+	private final List<supportVector> allExamples;
+	private supportVector[] active;
+	private supportVector[] inactive;
+	private final float Cp, Cn;
+	private final int numExamples;
 
 
+	BaseMatrix matrix;
+	float[] matrix_svA;
+	float[] matrix_svB;
+	float[] matrix_all;
 
 
-	public SVMModel solve() {
-		optimize();
+	public SVMModel solveEquation() {
+		makeOptimize();
 
 		SVMModel model = new SVMModel();
 
@@ -57,9 +58,10 @@ public  class quadraticProgrammingProblemSolver
 
 		float v = 0;
 		for (supportVector svC : allExamples) {
-			v += svC.alpha * (svC.G + svC.linearTerm);
+			v += svC.alpha * (svC.Grade + svC.linearTerm);
 		}
 
+		// the objective function
 		model.obj = v / 2;
 
 		model.supportVectors = new HashMap<dataExample, Double>();
@@ -69,14 +71,11 @@ public  class quadraticProgrammingProblemSolver
 			
 		}
 		
-		model.upperBoundPositive = Cp;
-		model.upperBoundNegative = Cn;
-
 
 		return model;
 	}
 	
-	public quadraticProgrammingProblemSolver( List<supportVector> solutionVectors,  QMatrix Q, float Cp, float Cn, float eps,
+	public quadraticProgrammingProblemSolver( List<supportVector> solutionVectors,  BaseMatrix Q, float Cp, float Cn, float eps,
 	              boolean shrinking) throws Exception
 		{
 
@@ -96,11 +95,11 @@ public  class quadraticProgrammingProblemSolver
 		this.allExamples = solutionVectors;
 
 		this.numExamples = allExamples.size();
-		Q_all = new float[numExamples];
+		matrix_all = new float[numExamples];
 		}
 
 
-	protected void calculate_rho(SVMModel model)
+	private void calculate_rho(SVMModel model)
 		{
 		int nr_free1 = 0, nr_free2 = 0;
 		double ub1 = Double.POSITIVE_INFINITY, ub2 = Double.POSITIVE_INFINITY;
@@ -114,32 +113,32 @@ public  class quadraticProgrammingProblemSolver
 				{
 				if (sv.isLowerBound())
 					{
-					ub1 = Math.min(ub1, sv.G);
+					ub1 = Math.min(ub1, sv.Grade);
 					}
 				else if (sv.isUpperBound())
 					{
-					lb1 = Math.max(lb1, sv.G);
+					lb1 = Math.max(lb1, sv.Grade);
 					}
 				else
 					{
 					++nr_free1;
-					sum_free1 += sv.G;
+					sum_free1 += sv.Grade;
 					}
 				}
 			else
 				{
 				if (sv.isLowerBound())
 					{
-					ub2 = Math.min(ub2, sv.G);
+					ub2 = Math.min(ub2, sv.Grade);
 					}
 				else if (sv.isUpperBound())
 					{
-					lb2 = Math.max(lb2, sv.G);
+					lb2 = Math.max(lb2, sv.Grade);
 					}
 				else
 					{
 					++nr_free2;
-					sum_free2 += sv.G;
+					sum_free2 += sv.Grade;
 					}
 				}
 			}
@@ -168,7 +167,7 @@ public  class quadraticProgrammingProblemSolver
 		model.rho = (float) ((r1 - r2) / 2);
 		}
 
-	protected int optimize()
+	private int makeOptimize()
 		{
 		matrix.initOrders(allExamples); // write sequential ranks for all the suppor vectors
 
@@ -178,7 +177,6 @@ public  class quadraticProgrammingProblemSolver
 			}
 
 
-		// initialize active set (for shrinking)
 
 		initActiveSet();
 
@@ -186,8 +184,8 @@ public  class quadraticProgrammingProblemSolver
 
 		for (supportVector svA : allExamples)
 			{
-			svA.G = svA.linearTerm;
-			svA.G_bar = 0;
+			svA.Grade = svA.linearTerm;
+			svA.Grade_bar = 0;
 			}
 		for (supportVector svA : allExamples)
 			{
@@ -195,17 +193,17 @@ public  class quadraticProgrammingProblemSolver
 				{
 			
 
-				matrix.fillArrayWithSupportVectorEntries(svA, active, Q_svA);
+				matrix.fillArrayWithSupportVectorEntries(svA, active, matrix_svA);
 				for (supportVector svB : allExamples)
 					{
-					svB.G += svA.alpha * Q_svA[svB.supportVectorOrder];
+					svB.Grade += svA.alpha * matrix_svA[svB.supportVectorOrder];
 	
 					}
 				if (svA.isUpperBound()) 
 					{
 					for (supportVector svB : allExamples)
 						{
-						svB.G_bar += svA.getC(Cp, Cn) * Q_svA[svB.supportVectorOrder];
+						svB.Grade_bar += svA.getC(Cp, Cn) * matrix_svA[svB.supportVectorOrder];
 						
 						}
 					}
@@ -224,26 +222,22 @@ public  class quadraticProgrammingProblemSolver
 
 		while (true)
 			{
-			// show progress and do shrinking
 
 			if (--counter == 0)
 				{
 				counter = Math.min(numExamples, 1000);
 				if (shrinking)
 					{
-					do_shrinking();
+					shrink();
 					}
 
 			
 				}
-			//oldPair = pair;
-			SolutionVectorPair pair = selectWorkingPair();
+			SelectedPair pair = selectWorkingPair();
 
 			if (pair.isOptimal) // pair already optimal
 				{
-				// reconstruct the whole gradient
-				reconstructGradient();
-
+				
 				// reset active set size and check
 				resetActiveSet();
 
@@ -273,11 +267,11 @@ public  class quadraticProgrammingProblemSolver
 
 
 
-			matrix.fillArrayWithSupportVectorEntries(svA, active, Q_svA);
-			matrix.fillArrayWithSupportVectorEntries(svB, active, Q_svB);
+			matrix.fillArrayWithSupportVectorEntries(svA, active, matrix_svA);
+			matrix.fillArrayWithSupportVectorEntries(svB, active, matrix_svB);
 
-			float C_i = svA.getC(Cp, Cn); //getC(i);
-			float C_j = svB.getC(Cp, Cn); //getC(j);
+			float C_i = svA.getC(Cp, Cn); 
+			float C_j = svB.getC(Cp, Cn); 
 
 			double old_alpha_i = svA.alpha;
 			double old_alpha_j = svB.alpha;
@@ -286,14 +280,14 @@ public  class quadraticProgrammingProblemSolver
 				{
 			
 				float quad_coef = matrix.evaluateDiagonal(svA) + matrix.evaluateDiagonal(svB)
-						+ 2 * Q_svA[svB.supportVectorOrder]; 
+						+ 2 * matrix_svA[svB.supportVectorOrder]; 
 
 
 				if (quad_coef <= 0)
 					{
 					quad_coef = 1e-12f;
 					}
-				double delta = (-svA.G - svB.G) / quad_coef;
+				double delta = (-svA.Grade - svB.Grade) / quad_coef;
 				double diff = svA.alpha - svB.alpha;
 				// the change in the value of alpha(i) and alpha(j) depends on the difference between approxomation error
 				svA.alpha += delta;
@@ -335,14 +329,14 @@ public  class quadraticProgrammingProblemSolver
 			else
 				{
 				float quad_coef = matrix.evaluateDiagonal(svA) + matrix.evaluateDiagonal(svB)
-						- 2 * Q_svA[svB.supportVectorOrder]; 
+						- 2 * matrix_svA[svB.supportVectorOrder]; 
 
 
 				if (quad_coef <= 0)
 					{
 					quad_coef = 1e-12f;
 					}
-				double delta = (svA.G - svB.G) / quad_coef;
+				double delta = (svA.Grade - svB.Grade) / quad_coef;
 				double sum = svA.alpha + svB.alpha;
 				svA.alpha -= delta;
 				svB.alpha += delta;
@@ -381,7 +375,7 @@ public  class quadraticProgrammingProblemSolver
 					}
 				}
 
-			// update G
+			// update Grade
 
 			double delta_alpha_i = svA.alpha - old_alpha_i;
 			double delta_alpha_j = svB.alpha - old_alpha_j;
@@ -395,7 +389,7 @@ public  class quadraticProgrammingProblemSolver
 		
 			for (int i = 0; i < active.length; i++)
 				{
-				active[i].G += Q_svA[i] * delta_alpha_i + Q_svB[i] * delta_alpha_j;
+				active[i].Grade += matrix_svA[i] * delta_alpha_i + matrix_svB[i] * delta_alpha_j;
 				}
 	
 
@@ -409,12 +403,12 @@ public  class quadraticProgrammingProblemSolver
 
 			if (ui != svA.isUpperBound()) 
 				{
-				matrix.getQ(svA, active, inactive, Q_all);
+				matrix.getQ(svA, active, inactive, matrix_all);
 				if (ui)
 					{
 					for (supportVector svC : allExamples)
 						{
-						svC.G_bar -= C_i * Q_all[svC.supportVectorOrder]; 
+						svC.Grade_bar -= C_i * matrix_all[svC.supportVectorOrder]; 
 					
 						}
 					}
@@ -422,7 +416,7 @@ public  class quadraticProgrammingProblemSolver
 					{
 					for (supportVector svC : allExamples)
 						{
-						svC.G_bar += C_i * Q_all[svC.supportVectorOrder]; 
+						svC.Grade_bar += C_i * matrix_all[svC.supportVectorOrder]; 
 					
 						}
 					}
@@ -430,12 +424,12 @@ public  class quadraticProgrammingProblemSolver
 
 			if (uj != svB.isUpperBound()) 
 				{				
-				matrix.getQ(svB, active, inactive, Q_all);
+				matrix.getQ(svB, active, inactive, matrix_all);
 				if (uj)
 					{
 					for (supportVector svC : allExamples)
 						{
-						svC.G_bar -= C_j * Q_all[svC.supportVectorOrder];
+						svC.Grade_bar -= C_j * matrix_all[svC.supportVectorOrder];
 	
 						}
 					}
@@ -444,7 +438,7 @@ public  class quadraticProgrammingProblemSolver
 					for (supportVector svC : allExamples)
 						{
 						
-						svC.G_bar += C_j * Q_all[svC.supportVectorOrder]; 
+						svC.Grade_bar += C_j * matrix_all[svC.supportVectorOrder]; 
 						
 						}
 					}
@@ -452,18 +446,18 @@ public  class quadraticProgrammingProblemSolver
 			}
 
 		
-		return iter;		// activeSet;
+		return iter;		
 		}
 
-	protected void initActiveSet()
+	private void initActiveSet()
 		{
 		active = allExamples.toArray(EMPTY_SV_ARRAY);
 		inactive = EMPTY_SV_ARRAY;
-		Q_svA = new float[active.length];
-		Q_svB = new float[active.length];
+		matrix_svA = new float[active.length];
+		matrix_svB = new float[active.length];
 		}
 
-	void do_shrinking()
+	void shrink()
 		{
 		double Gmax1 = Double.NEGATIVE_INFINITY;
 		double Gmax2 = Double.NEGATIVE_INFINITY;
@@ -477,28 +471,28 @@ public  class quadraticProgrammingProblemSolver
 				{
 				if (sv.targetValue==1)
 					{
-					if (-sv.G > Gmax1)
+					if (-sv.Grade > Gmax1)
 						{
-						Gmax1 = -sv.G;
+						Gmax1 = -sv.Grade;
 						}
 					}
-				else if (-sv.G > Gmax4)
+				else if (-sv.Grade > Gmax4)
 					{
-					Gmax4 = -sv.G;
+					Gmax4 = -sv.Grade;
 					}
 				}
 			if (!sv.isLowerBound())
 				{
 				if (sv.targetValue==1)
 					{
-					if (sv.G > Gmax2)
+					if (sv.Grade > Gmax2)
 						{
-						Gmax2 = sv.G;
+						Gmax2 = sv.Grade;
 						}
 					}
-				else if (sv.G > Gmax3)
+				else if (sv.Grade > Gmax3)
 					{
-					Gmax3 = sv.G;
+					Gmax3 = sv.Grade;
 					}
 				}
 			}
@@ -506,18 +500,15 @@ public  class quadraticProgrammingProblemSolver
 		if (!unshrink && Math.max(Gmax1 + Gmax2, Gmax3 + Gmax4) <= eps * 10)
 			{
 			unshrink = true;
-			reconstructGradient();
 			resetActiveSet();
 			}
 
 
-		// There was an extremely messy iteration here before, but I think it served only to separate the shrinkable vectors from the unshrinkable ones.
 
 		Collection<supportVector> activeList =
-				new ArrayList<supportVector>(Arrays.asList(active)); //Arrays.asList(active);
+				new ArrayList<supportVector>(Arrays.asList(active)); 
 		Collection<supportVector> inactiveList = new ArrayList<supportVector>();
 
-		// note the ordering: newly inactive SVs go at the beginning of the inactive list, maintaining order
 
 		for (Iterator<supportVector> iter = activeList.iterator(); iter.hasNext();)
 			{
@@ -534,84 +525,22 @@ public  class quadraticProgrammingProblemSolver
 		supportVector[] newlyInactive = inactiveList.toArray(EMPTY_SV_ARRAY);
 		matrix.maintainCache(active, newlyInactive);
 
-		// previously inactive SVs come after that
 		inactiveList.addAll(Arrays.asList(inactive));
 		inactive = inactiveList.toArray(EMPTY_SV_ARRAY);
 		}
 
 	
-	void reconstructGradient()
-		{
-		if (active.length == numExamples)
-			{
-			return;
-			}
-
-		int nr_free = 0;
-
-
-		for (supportVector sv : inactive)
-			{
-			sv.G = sv.G_bar + sv.linearTerm;
-			}
-
-		for (supportVector sv : active)
-			{
-			if (sv.isFree())
-				{
-				nr_free++;
-				}
-			}
-
-		int activeSize = active.length;
-
-
-		if (nr_free * numExamples > 2 * activeSize * (numExamples - activeSize))
-			{
-			for (supportVector svA : inactive)
-				{
-				//float[] Q_i = Q.getQ(i, activeSize);
-				matrix.fillArrayWithSupportVectorEntries(svA, active, Q_svA);
-				for (supportVector svB : active)
-					{
-					if (svB.isFree()) //is_free(j))
-						{
-						//assert Q_svA[svB.rank] == Q.evaluate(svA, svB);
-						svA.G += svB.alpha * Q_svA[svB.supportVectorOrder];
-					
-						}
-					}
-				}
-			}
-		else
-			{
-			for (supportVector svA : active)
-				{
-				if (svA.isFree()) 
-					{
-					
-					matrix.getQ(svA, active, inactive, Q_all);
-					for (supportVector svB : inactive)
-						{
-						//assert Q_all[svB.rank] == Q.evaluate(svA, svB);
-						svB.G += svA.alpha * Q_all[svB.supportVectorOrder];
-						
-						}
-					}
-				}
-			}
-		}
-
-	protected void resetActiveSet()
+	
+	private void resetActiveSet()
 		{
 		active = allExamples.toArray(EMPTY_SV_ARRAY);
 		Arrays.sort(active);
 		inactive = EMPTY_SV_ARRAY;
-		Q_svA = new float[active.length];
-		Q_svB = new float[active.length];
+		matrix_svA = new float[active.length];
+		matrix_svB = new float[active.length];
 		}
 
-	private SolutionVectorPair selectWorkingPair()
+	private SelectedPair selectWorkingPair()
 		{
 		// we want to find the pair of points that maximize the difference in classification error is largest
 		// we want a pair of points that make the decease of objective function maximized
@@ -642,9 +571,9 @@ public  class quadraticProgrammingProblemSolver
 						{
 						if (!sv.isUpperBound())
 							{
-							if (-sv.G >= Gmaxp)
+							if (-sv.Grade >= Gmaxp)
 								{
-								Gmaxp = -sv.G;
+								Gmaxp = -sv.Grade;
 								GmaxpSV = sv;
 								}
 							}
@@ -653,17 +582,17 @@ public  class quadraticProgrammingProblemSolver
 						{
 						if (!sv.isLowerBound())
 							{
-							if (sv.G >= Gmaxn)
+							if (sv.Grade >= Gmaxn)
 								{
-								Gmaxn = sv.G;
+								Gmaxn = sv.Grade;
 								GmaxnSV = sv;
 								}
 							}
 						}
 					}
 
-				matrix.fillArrayWithSupportVectorEntries(GmaxpSV, active, Q_svA);
-				matrix.fillArrayWithSupportVectorEntries(GmaxnSV, active, Q_svB);
+				matrix.fillArrayWithSupportVectorEntries(GmaxpSV, active, matrix_svA);
+				matrix.fillArrayWithSupportVectorEntries(GmaxnSV, active, matrix_svB);
 
 				for (supportVector sv : active)
 					{
@@ -675,16 +604,16 @@ public  class quadraticProgrammingProblemSolver
 						{
 						if (!sv.isLowerBound())
 							{
-							double grad_diff = Gmaxp + sv.G;
-							if (sv.G >= Gmaxp2)
+							double grad_diff = Gmaxp + sv.Grade;
+							if (sv.Grade >= Gmaxp2)
 								{
-								Gmaxp2 = sv.G;
+								Gmaxp2 = sv.Grade;
 								}
 							if (grad_diff > 0)
 								{
 								double obj_diff;
 								double quad_coef = matrix.evaluateDiagonal(GmaxpSV) + matrix.evaluateDiagonal(sv)
-										- 2.0f * Q_svA[sv.supportVectorOrder]; 
+										- 2.0f * matrix_svA[sv.supportVectorOrder]; 
 								if (quad_coef > 0)
 									{
 									obj_diff = -(grad_diff * grad_diff) / quad_coef;
@@ -706,10 +635,10 @@ public  class quadraticProgrammingProblemSolver
 						{
 						if (!sv.isUpperBound())
 							{
-							double grad_diff = Gmaxn - sv.G;
-							if (-sv.G >= Gmaxn2)
+							double grad_diff = Gmaxn - sv.Grade;
+							if (-sv.Grade >= Gmaxn2)
 								{
-								Gmaxn2 = -sv.G;
+								Gmaxn2 = -sv.Grade;
 								}
 							if (grad_diff > 0)
 								{
@@ -717,7 +646,7 @@ public  class quadraticProgrammingProblemSolver
 
 
 								double quad_coef = matrix.evaluateDiagonal(GmaxnSV) + matrix.evaluateDiagonal(sv)
-										- 2.0f * Q_svB[sv.supportVectorOrder]; //Q_GmaxnSV[sv.rank];
+										- 2.0f * matrix_svB[sv.supportVectorOrder]; 
 
 								if (quad_coef > 0)
 									{
@@ -740,26 +669,24 @@ public  class quadraticProgrammingProblemSolver
 						}
 					}
 
-
-				return new SolutionVectorPair(GminSV.targetValue==1 ? GmaxpSV : GmaxnSV, GminSV,
+				
+				return new SelectedPair(GminSV.targetValue==1 ? GmaxpSV : GmaxnSV, GminSV,
 				                              Math.max(Gmaxp + Gmaxp2, Gmaxn + Gmaxn2) < eps);
 
 		
 		}
 
 
-	protected class SolutionVectorPair
+	private class SelectedPair
 		{
-// ------------------------------ FIELDS ------------------------------
 
 		boolean isOptimal;
 		supportVector svA;
 		supportVector svB;
 
 
-// --------------------------- CONSTRUCTORS ---------------------------
 
-		protected SolutionVectorPair(supportVector svA, supportVector svB, boolean isOptimal)
+		private SelectedPair(supportVector svA, supportVector svB, boolean isOptimal)
 			{
 			this.svA = svA;
 			this.svB = svB;

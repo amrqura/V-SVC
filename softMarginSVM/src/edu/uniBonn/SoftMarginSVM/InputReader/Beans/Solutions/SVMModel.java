@@ -15,8 +15,7 @@ public class SVMModel {
 	public svmConfiguration param;
 
 	public float obj;
-	public float upperBoundPositive;
-	public float upperBoundNegative;
+	
 
 	// used only during training, then ditched
 	public Map<dataExample, Double> supportVectors;
@@ -54,7 +53,9 @@ public class SVMModel {
 		DataOutputStream fp = new DataOutputStream(new FileOutputStream(
 				model_file_name));
 		writeToStream(fp);
-		fp.writeBytes("SV\n");
+		fp.writeBytes("support Vectors\n");
+		
+		
 
 		for (int i = 0; i < numSVs; i++) {
 			fp.writeBytes(alphas[i] + " ");

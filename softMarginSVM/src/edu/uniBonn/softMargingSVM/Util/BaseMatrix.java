@@ -5,7 +5,7 @@ import java.util.Collection;
 import edu.uniBonn.SoftMarginSVM.InputReader.Beans.Solutions.supportVector;
 
 
-public interface QMatrix {
+public interface BaseMatrix {
 
 
 
