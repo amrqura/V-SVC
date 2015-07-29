@@ -12,7 +12,7 @@ import edu.uniBonn.softMargingSVM.SVMLib.svmConfiguration;
 import edu.uniBonn.softMargingSVM.Util.SVMScaler;
 
 
-public class Executer {
+public class Learner {
 
 	private final static String USAGE = "Usage: [datafile] [C=Penality Value] [eps epsilonValue] [delimiter] [Comma separated field Names] \n For Exaple: Executer \"dataFile.txt \" 0.3, \",\", \" age,Salary \" *";
 
@@ -42,13 +42,13 @@ public class Executer {
 				System.out.println("3- RBF kernel function");
 				System.out.println("4- sigmoid Kernel function");
 				choise = in.nextInt();
-				if(choise>=1 && choise <=5)
+				if(choise>=1 && choise <=4)
 					break;
 				else
 					System.out.println("wrong choise , please enter the choise again");
 			}
 			svmConfiguration config=new svmConfiguration();
-			
+			config.kernel_type=choise;
 			if(choise==2)
 			{
 				System.out.println("Please Enter the degree of Polynomial");
@@ -87,6 +87,7 @@ public class Executer {
 			SVMModel model=trainer.trainData(data, config);
 			System.out.println("finish Learning");
 			System.out.println("Saving training Model in "+attributeReaders.getModelFileName());
+			
 			model.writeModelToFile(attributeReaders.getModelFileName());
 			
 			// start scaling the data

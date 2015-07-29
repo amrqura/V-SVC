@@ -14,8 +14,8 @@ public class SVMTrainer {
 
 	public SVMModel trainData(dataTable data,svmConfiguration conf) throws Exception 
 	{
-		SVMModel result=new SVMModel();
 		
+		SVMModel model=new SVMModel();
 		if(!feasible(data, conf))
 		{
 			System.err.println("the specified V Value is not feasible for training the data");
@@ -65,7 +65,7 @@ public class SVMTrainer {
 		KernelMatrix matrix=new KernelMatrix(conf.getKernel(),solutionVectors.size(),conf.cache_size);
 		try {
 			quadraticProgrammingProblemSolver s = new quadraticProgrammingProblemSolver(solutionVectors, matrix,weightedCp, weightedCn, conf.eps, true);
-			SVMModel model = s.solveEquation();
+			 model = s.solveEquation();
 			
 			model.param = conf;
 
@@ -97,7 +97,8 @@ public class SVMTrainer {
 
 			
 			model.fillParams();
-
+			model.kernelType=conf.kernel_type;
+			
 			
 			return model;
 		} catch (Exception e) {
@@ -108,7 +109,7 @@ public class SVMTrainer {
 		
 		
 		
-		return result;
+		return model;
 		
 	}
 	

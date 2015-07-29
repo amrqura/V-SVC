@@ -16,6 +16,7 @@ public class SVMModel {
 
 	public float obj;
 	
+	
 
 	// used only during training, then ditched
 	public Map<dataExample, Double> supportVectors;
@@ -28,6 +29,8 @@ public class SVMModel {
 	public float rho;
 	public float r;
 	
+	
+	public int kernelType;
 
 	protected void writeSupportVectors(DataOutputStream fp) throws IOException {
 		fp.writeBytes("SV\n");
@@ -45,7 +48,23 @@ public class SVMModel {
 
 		fp.writeBytes("rho " + rho + "\n");
 		fp.writeBytes("total_sv " + numSVs + "\n");
+		fp.writeBytes("kernel_type="+kernelType+"\n");
+		if(kernelType==2) // polynomial Kernel
+		{
+			fp.writeBytes("degree="+param.degree+"\n");
+		}
+		else if(kernelType==3) //RBF KERNEL
+		{
+			fp.writeBytes("Gamma="+param.gamma+"\n");
 
+		}
+		else if(kernelType==4) //sigmoid KERNEL
+		{
+			fp.writeBytes("Gamma="+param.gamma+"\n");
+			fp.writeBytes("coef0="+param.coef0+"\n");
+
+		}
+		
 	}
 
 	// write to file
